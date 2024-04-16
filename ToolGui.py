@@ -3,59 +3,96 @@ import fnmatch
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
-
-directory_path = "D:/xiangm"
-
-
-# 查找文件夹中所有的 .apk 文件
-def find_apks(directory_path):
-    apk_files = []
-    # 判断是否存在文件路径
-    if os.path.exists(directory_path):
-        # 遍历 directory_path 指定的目录及其所有子目录，产生三个值：当前文件夹路径（root），当前文件夹下的子目录列表（dirs），以及当前文件夹下所有文件的列表（files）
-        for root, dirs, files in os.walk(directory_path):
-            # 用 fnmatch.filter 函数筛选出所有以 .apk 结尾的文件
-            for filename in fnmatch.filter(files, '*.apk'):
-                apk_files.append(os.path.join(root, filename))
-    else:
-        messagebox.showerror("Error", "The specified directory does not exist.")
-    return apk_files
+from adbtool import *
+from tkinter.scrolledtext import ScrolledText
 
 
-# 更新下拉列表中的条目
-def update_combobox(directory_path):
-    apk_files = find_apks(directory_path)
-    combobox['values'] = apk_files
-    if apk_files:
-        combobox.current(0)
-    else:
-        combobox.set('')
-        messagebox.showinfo("Info", "No .apk files found in the specified directory.")
+class APKSelector:
+    def __init__(self, root):
+        self.root = root
+        self.root.title('APK 文件选择器')
+        self.root.geometry('500x300')  # 设置窗口大小
 
+        # 创建一个下拉列表
+        self.combobox = ttk.Combobox(root, width=100, state="readonly")
+        self.combobox.pack(padx=10, pady=10)
 
-# 当用户点击显示 APK 文件按钮时的操作
-def on_submit():
-    update_combobox(directory_path)
+        # 创建按钮
+        self.create_buttons()
 
-def on_submit2():
-    return
+        # 更新下拉列表中的条目
+        self.update_combobox()
+
+        # 创建输出面板
+        self.create_output_panel()
+
+        self.adb_devices()
+
+    def adb_devices(self):
+        try:
+            result = subprocess.run(['adb', 'devices'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            if 'device' in result.stdout:
+                devices = result.stdout.splitlines()
+                connected_devices = [device for device in devices[1:] if device.strip()]
+                if connected_devices:
+                    print('成功连接到设备：')
+                    for device in connected_devices:
+                        print(device)
+                    return True
+                else:
+                    print('没有检测到连接的设备。')
+            else:
+                print(f'错误：{result.stderr}')
+        except Exception as e:
+            print(f'执行ADB命令时出现异常：{e}')
+        return False
+
+    def create_buttons(self):
+        # 创建“刷新”按钮
+        button_refresh = ttk.Button(root, text="刷新", command=self.update_combobox)
+        button_refresh.pack(padx=10, pady=10)
+
+        # 创建“安装”按钮
+        button_install = ttk.Button(root, text="安装", command=self.install_apk)
+        button_install.pack(padx=10, pady=10)
+
+    def find_apks(self, directory_path):
+        apk_files = []
+        if os.path.exists(directory_path):
+            for root, dirs, files in os.walk(directory_path):
+                for filename in fnmatch.filter(files, '*.apk'):
+                    apk_files.append(os.path.join(root, filename))
+        return apk_files
+
+    def create_output_panel(self):
+        # 创建一个滚动文本框用于显示输出内容
+        self.output_text = ScrolledText(root, height=10, width=50)
+        self.output_text.pack(padx=10, pady=10)
+
+    def update_combobox(self):
+        apk_files = self.find_apks(directory_path)
+        self.combobox['values'] = apk_files
+        self.combobox.set(apk_files[0] if apk_files else '')
+        if not apk_files:
+            messagebox.showinfo("信息", "指定目录中未找到 .apk 文件。")
+
+    def install_apk(self):
+        selected_apk = self.combobox.get()
+        self.output_text.insert(tk.END, "开始装包\n")
+        # install_apks(selected_apk)
+        if selected_apk:
+            # 添加安装选定 APK 的代码
+            messagebox.showinfo("信息", f"正在安装 {selected_apk}")
+        else:
+            messagebox.showinfo("信息", "请选择一个 APK 文件。")
 
 
 if __name__ == '__main__':
-    # 创建主窗口
+    directory_path = "D:/xiangm"
     root = tk.Tk()
-    root.title('APK Files Selector')
-    root.geometry('500x300')  # 这里的乘是小x
+    apk_selector = APKSelector(root)
+    apk_selector.adb_devices()
 
-    # 创建一个下拉列表
-    combobox = ttk.Combobox(root, width=100, state="readonly")
-    combobox.pack(padx=10, pady=10)
+    # root.mainloop()
 
-    # 创建一个按钮，用户点击后显示 .apk 文件
-    button_submit = ttk.Button(root, text="刷新", command=on_submit)
-    button_submit2 = ttk.Button(root, text="安装", command=on_submit2)
-    button_submit.pack(padx=10, pady=10)
-    button_submit2.pack(padx=10, pady=10)
-    update_combobox(directory_path)
-    # 运行主事件循环
-    root.mainloop()
+

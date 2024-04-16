@@ -4,7 +4,7 @@ import signal
 import tkinter as tk
 import fnmatch
 import time
-from Opencv_Gui import installation
+# from Opencv_Gui import installation
 from time import sleep
 
 
@@ -87,7 +87,7 @@ def stop_screen_record(process, video_path):
     print(f'视频已保存至桌面: {video_path}')
 
 
-def install_apk(apk_path):
+def install_apks(apk_path):
     if check_adb_devices() == True:
         try:
             # "adb install" 命令用于安装APK
@@ -119,7 +119,7 @@ def install_apk(apk_path):
 
 if __name__ == "__main__":
     # 将 'path_to_apk' 替换成你的APK文件的实际路径
-    install_apk('D:/xiangm/740263_release-Android-Shipping_universal.apk')
+    install_apks('D:/xiangm/740263_release-Android-Shipping_universal.apk')
     # GuiAdbTool()
     # start_path = 'D:/xiangm'  # 或者直接填写路径，例如 'C:/'
     # find_apks(start_path)
